@@ -77,10 +77,12 @@ entity = GameEntity()
 
 ground = Entity(
     model='plane',
-    collider='box',
+    collider='mesh',
     shader=shader,
     texture="ground",
-    scale=50, x=0, y=-10, z=0
+    uvs=uvs,
+    scale=50,
+    x=0, y=-10, z=0
 )
 
 s = Sky(shader=shader)
@@ -93,7 +95,7 @@ def input(key):
 
 pivot = Entity()
 pivot.input = input
-# AmbientLight()
+AmbientLight()
 # PointLight(parent=pivot, y=0, x=10, z=-10, shadows=True)
 # PointLight(parent=pivot, y=0, x=-10, z=-10, shadows=True)
 # DirectionalLight(parent=pivot, y=2, z=3, shadows=True)
@@ -150,7 +152,8 @@ def input(key):
 
 
 player = FirstPersonController()
-player.position = (0, -7, 0)
+player.position = (10, 10, 10)
+
 
 if __name__ == '__main__':
     app.run()
