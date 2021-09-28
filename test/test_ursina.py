@@ -1,11 +1,12 @@
 from ursina import *
-from ursina.shaders import texture_blend_shader as shader
+from ursina.shaders import lit_with_shadows_shader as shader
 from ursina.scripts import generate_normals
 from numpy import cross
 from ursina.prefabs.first_person_controller import FirstPersonController
 
 app = Ursina()
 window.borderless = False
+window.fullscreen = True
 
 
 def plane_normal(a, b, c):
@@ -62,18 +63,26 @@ vs = tuple(map(lambda v: (v[0]+position[0], v[1]+position[1], v[2]+position[2]),
 
 uvs = ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0))
 
+game_entity_parent = Entity(parent=scene)
+
 
 class GameEntity(Button):
-    def __init__(self, **kwargs):
-        super().__init__(parent=scene, model='cube', position=(0, 5, 0),
-                         shader=shader, scale=(2, 2, 2), texture="crate", collider="box", color=color.white)
+    def __init__(self, position, main=False):
+        super().__init__(parent=game_entity_parent, model='cube', position=position,
+                         shader=shader, scale=(2, 2, 2), texture="crate",
+                         collider="box", color=color.white)
+        self.main = main
 
-    def entity_input(self, key):
+    def input(self, key):
         if self.hovered:
-            self.texture =Texture('ground')
+            if key == input_handler.Keys.left_mouse_down:
+                GameEntity(self.position+mouse.normal*2)
+            if key == input_handler.Keys.right_mouse_down:
+                if not self.main:
+                    destroy(self)
 
 
-entity = GameEntity()
+entity = GameEntity((0, 5, 0), main=True)
 
 ground = Entity(
     model='plane',
@@ -113,8 +122,8 @@ AmbientLight()
 # camera.collider
 
 def update():
-    entity.y += held_keys[input_handler.Keys.up_arrow] * .1
-    entity.y -= held_keys[input_handler.Keys.down_arrow] * .1
+    game_entity_parent.y += held_keys[input_handler.Keys.up_arrow] * .1
+    game_entity_parent.y -= held_keys[input_handler.Keys.down_arrow] * .1
 
     # global camera_angle_x, camera_angle_y, camera_radius, camera_init
     #
