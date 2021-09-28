@@ -91,7 +91,8 @@ ground = Entity(
     texture="ground",
     uvs=uvs,
     scale=50,
-    x=0, y=-10, z=0
+    x=0, y=-10, z=0,
+    texture_scale=(25, 25)
 )
 
 s = Sky(shader=shader)
@@ -161,7 +162,7 @@ def input(key):
 
 
 player = FirstPersonController()
-player.position = (10, 10, 10)
+player.position = (10, -7, 10)
 
 
 if __name__ == '__main__':
