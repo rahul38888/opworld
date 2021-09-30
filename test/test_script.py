@@ -9,8 +9,8 @@ camera.position = (0, 12, 0)
 camera.fov = 90
 camera.look_at((0, 0, 0))
 
-PointLight(position=camera.position)
-
+# PointLight(position=camera.position)
+AmbientLight()
 
 def input(key):
     if key == Keys.escape:
@@ -46,10 +46,12 @@ class Box(Button):
             if key == Keys.left_mouse_down:
                 self.selected = not self.selected
                 if self.selected:
-                    self.color = color.olive
+                    self.color = color.white
+                    self.texture = Texture("lava.jpg")
                 else:
                     rnd = random.randint(100, 200)
                     self.color = color.rgb(rnd, rnd, rnd)
+
 
 
 size = (10, 10)
