@@ -51,7 +51,7 @@ class Box(Button):
                 else:
                     rnd = random.randint(100, 200)
                     self.color = color.rgb(rnd, rnd, rnd)
-
+                    # destroy(self, 1)
 
 
 size = (10, 10)
