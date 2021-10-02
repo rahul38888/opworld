@@ -1,3 +1,4 @@
+import screeninfo
 from ursina import *
 from ursina.shaders import lit_with_shadows_shader as shader
 from ursina.scripts import generate_normals
@@ -54,12 +55,12 @@ def calculate_normals(vertices, triangles):
     return result
 
 
-position = (0,5,0)
+position = (0, 5, 0)
 vs = ((-1, -1, 1), (1, -1, 1), (-1, 1, 1), (-1, -1, -1), (1, 1, 1), (-1, 1, -1), (1, -1, -1), (1, 1, -1))
 ts = (0, 2, 1, 0, 3, 2, 0, 1, 3, 7, 1, 2, 7, 2, 3, 7, 3, 1)
 norms = calculate_normals(vs, ts)
 
-vs = tuple(map(lambda v: (v[0]+position[0], v[1]+position[1], v[2]+position[2]), vs))
+vs = tuple(map(lambda v: (v[0] + position[0], v[1] + position[1], v[2] + position[2]), vs))
 
 uvs = ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0))
 
@@ -76,7 +77,7 @@ class GameEntity(Button):
     def input(self, key):
         if self.hovered:
             if key == input_handler.Keys.left_mouse_down:
-                GameEntity(self.position+mouse.normal*2)
+                GameEntity(self.position + mouse.normal * 2)
             if key == input_handler.Keys.right_mouse_down:
                 if not self.main:
                     destroy(self)
@@ -91,7 +92,7 @@ ground = Entity(
     texture="ground",
     uvs=uvs,
     scale=50,
-    x=0, y=-10, z=0,
+    x=0, y=0, z=0,
     texture_scale=(25, 25)
 )
 
@@ -106,6 +107,7 @@ def input(key):
 pivot = Entity()
 pivot.input = input
 AmbientLight()
+
 # PointLight(parent=pivot, y=0, x=10, z=-10, shadows=True)
 # PointLight(parent=pivot, y=0, x=-10, z=-10, shadows=True)
 # DirectionalLight(parent=pivot, y=2, z=3, shadows=True)
@@ -121,6 +123,21 @@ AmbientLight()
 # camera_init = False
 
 # camera.collider
+
+Text.default_resolution = 1080 * Text.size
+infohandler = Text(text="Starting ...", origin=(0, 15), background=False)
+
+
+class Player(FirstPersonController):
+    def __init__(self, position, init_health):
+        super(Player, self).__init__()
+        self.position = position
+        self.health = init_health
+        self.last_max_jump_pos = 0
+
+
+player = Player(position=(10, 3, 10), init_health=51)
+
 
 def update():
     game_entity_parent.y += held_keys[input_handler.Keys.up_arrow] * .1
@@ -154,15 +171,19 @@ def update():
     # texoffset += time.dt * 0.2
     # setattr(entity, "texture_offset", (texoffset, texoffset))
 
+    if not player.grounded:
+        player.last_max_jump_pos = max(player.last_max_jump_pos, player)
 
-def input(key):
-    if key == 'space':
-        entity.y += 1
-        invoke(setattr, entity, 'y', entity.y - 1, delay=.25)
+    if player.grounded and player.last_max_jump_pos >= 5:
+        damage = round(player.last_max_jump_pos - 4)
+        if damage > 0:
+            player.health -= damage
+            player.health = max(player.health, 0)
+        player.last_max_jump_pos = 0
 
-
-player = FirstPersonController()
-player.position = (10, -7, 10)
+    info = "<green>Speed " + str(player.y) + "<red>Grounded " + str(player.health)
+    # print(Text.get_width(info))
+    infohandler.text = info
 
 
 if __name__ == '__main__':
