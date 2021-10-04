@@ -10,6 +10,7 @@ from ursina.prefabs.first_person_controller import FirstPersonController
 app = Ursina()
 window.borderless = False
 window.fullscreen = True
+camera.world_rotation = (0, 0, 0)
 
 
 def plane_normal(a, b, c):
@@ -70,10 +71,14 @@ game_entity_parent = Entity(parent=scene)
 
 entities = set()
 
+hit_obj = Entity(model="cube", scale=(1, 1, 1), texture='crate', shader=shader, color=color.rgba(0, 1, 0, 0.3),
+                 collider=None)
+hit_obj.__setattr__("hit_rotation", hit_obj.rotation)
+
 
 class GameEntity(Button):
-    def __init__(self, position, main=False, name=None):
-        super().__init__(parent=game_entity_parent, model='cube', position=position,
+    def __init__(self, position, rotation, model, main=False, name=None):
+        super().__init__(parent=game_entity_parent, model=model, position=position, rotation=rotation,
                          shader=shader, scale=(1, 1, 1), texture="crate",
                          collider="box", color=color.white)
         self.main = main
@@ -105,18 +110,23 @@ ground = Entity(
 
 s = Sky(shader=shader)
 
+models = ['cube', 'sphere']
+cur_model = 0
+
 
 def input(key):
+    global cur_model
     if key == input_handler.Keys.escape:
         application.quit()
 
+    if key == "o":
+        cur_model = (cur_model + 1) % len(models)
+        print(key, cur_model)
+
     if key == input_handler.Keys.left_mouse_down:
         if mouse.world_point:
-            new_entity = None
-            if mouse.hovered_entity.name.startswith("game_entity"):
-                new_entity = GameEntity(position=mouse.hovered_entity.position + mouse.normal, name="game_entity_"+ str(len(entities)))
-            else:
-                new_entity = GameEntity(position=mouse.world_point + mouse.normal/2, name="game_entity_"+ str(len(entities)))
+            new_entity = GameEntity(position=hit_obj.position, rotation=hit_obj.rotation, model=hit_obj.model,
+                                    name="game_entity_" + str(len(entities)))
             entities.add(new_entity)
 
 
@@ -155,34 +165,32 @@ class Player(FirstPersonController):
 player = Player(position=(0, 4, 0), init_health=51)
 player.update()
 
-hit_obj = Entity(model="cube", scale=(1, 1, 1), texture='crate', shader=shader, color=color.rgba(1, 1, 1, 0.5),
-                 collider=None)
-
 
 def get_direction(angles: tuple):
-    zh = angles[1]*math.pi/180
-    zv = angles[0]*math.pi/180
+    zh = angles[1] * math.pi / 180
+    zv = angles[0] * math.pi / 180
 
     y = -math.sin(zv)
-    x = math.cos(zv)*math.sin(zh)
-    z = math.cos(zv)*math.cos(zh)
+    x = math.cos(zv) * math.sin(zh)
+    z = math.cos(zv) * math.cos(zh)
 
     return x, y, z
 
 
-# myraycaster = raycaster()
-
-
 def update():
-    game_entity_parent.z += held_keys[input_handler.Keys.up_arrow] * .1
-    game_entity_parent.z -= held_keys[input_handler.Keys.down_arrow] * .1
+    global hit_obj, cur_model
+    rotation_y = hit_obj.hit_rotation[1]
+    rotation_y += held_keys[input_handler.Keys.right_arrow] * 1
+    rotation_y -= held_keys[input_handler.Keys.left_arrow] * 1
 
-    game_entity_parent.x += held_keys[input_handler.Keys.right_arrow] * .1
-    game_entity_parent.x -= held_keys[input_handler.Keys.left_arrow] * .1
+    hit_obj.hit_rotation = (hit_obj.hit_rotation[0], rotation_y, hit_obj.hit_rotation[2])
 
-    old_y = game_entity_parent.y
-    game_entity_parent.y += held_keys[input_handler.Keys.left_shift] * .1
-    game_entity_parent.y -= held_keys[input_handler.Keys.left_control] * .1
+    # game_entity_parent.x += held_keys[input_handler.Keys.right_arrow] * .1
+    # game_entity_parent.x -= held_keys[input_handler.Keys.left_arrow] * .1
+    #
+    # old_y = game_entity_parent.y
+    # game_entity_parent.y += held_keys[input_handler.Keys.left_shift] * .1
+    # game_entity_parent.y -= held_keys[input_handler.Keys.left_control] * .1
 
     # if entity.intersects(ground):
     #     game_entity_parent.y = old_y
@@ -232,19 +240,32 @@ def update():
     if mouse.world_point:
         if mouse.hovered_entity.name.startswith("game_entity"):
             hit_obj.enable()
-            hit_obj.position = mouse.hovered_entity.position + mouse.normal
+            hit_obj.position = mouse.hovered_entity.world_position + mouse.world_normal.normalized()
+            hit_obj.world_rotation = mouse.hovered_entity.world_rotation
         else:
             hit_obj.enable()
-            hit_obj.position = mouse.world_point + mouse.normal/2
+            hit_obj.rotation = hit_obj.hit_rotation
+            hit_obj.position = mouse.world_point + mouse.world_normal.normalized() / 2
     else:
         hit_obj.disable()
+
+    if hit_obj.model != models[cur_model]:
+        old_hit_obj = hit_obj
+        hit_obj = Entity(model=models[cur_model], position=old_hit_obj.position, scale=hit_obj.scale, texture='crate',
+                         shader=shader, color=color.rgba(0, 1, 0, 0.3), collider=None, rotation=hit_obj.rotation)
+        hit_obj.__setattr__("hit_rotation", old_hit_obj.hit_rotation or old_hit_obj.rotation)
+
+        destroy(old_hit_obj)
+
+    if player.y < -50:
+        player.position = (0, 4, 0)
 
     # if hit_info.hit:
     #     print(origin, camera.world_rotation, hit_info.point)
     #
     # dir = str(("{:.2f}".format(direction[0]), "{:.2f}".format(direction[1]), "{:.2f}".format(direction[2])))
-    info = "<green>Direction " + \
-           str(mouse.hovered_entity) + \
+    info = "<green>Object " + \
+           str(cur_model) + \
            "<red>Grounded " + str(player.health)
     # print(Text.get_width(info))
     infohandler.text = info
