@@ -71,15 +71,48 @@ game_entity_parent = Entity(parent=scene)
 
 entities = set()
 
-hit_obj = Entity(model="cube", scale=(1, 1, 1), texture='crate', shader=shader, color=color.rgba(0, 1, 0, 0.3),
-                 collider=None)
-hit_obj.__setattr__("hit_rotation", hit_obj.rotation)
+
+class HitObj:
+    def __init__(self):
+        self.models = [
+            Entity(model="cube", scale=(1, 1, 1), texture='crate', shader=shader, color=color.rgba(0, 1, 0, 0.3),
+                   collider=None),
+            Entity(model="sphere", scale=(1, 1, 1), texture='lava', shader=shader, color=color.rgba(0, 1, 0, 0.3),
+                   collider=None)]
+
+        self.models_name = ["cube", "sphere"]
+
+        for model in self.models:
+            model.__setattr__("hit_rotation", model.rotation)
+            model.disable()
+
+        self.active = 0
+
+    def get_model(self):
+        return self.models[self.active]
+
+    def get_model_name(self):
+        return self.models_name[self.active]
+
+    def next(self):
+        self.get_model().disable()
+        self.active = (self.active+1) % len(self.models)
+        self.models[self.active].enable()
+
+    def __str__(self) -> str:
+        return str(self.active)
+
+    def __repr__(self) -> str:
+        return repr(self.active)
+
+
+models = HitObj()
 
 
 class GameEntity(Button):
-    def __init__(self, position, rotation, model, main=False, name=None):
+    def __init__(self, position, rotation, model, texture, main=False, name=None):
         super().__init__(parent=game_entity_parent, model=model, position=position, rotation=rotation,
-                         shader=shader, scale=(1, 1, 1), texture="crate",
+                         shader=shader, scale=(1, 1, 1), texture=texture,
                          collider="box", color=color.white)
         self.main = main
         self.name = "game_entity" if not name else name
@@ -98,7 +131,8 @@ class GameEntity(Button):
 # entity = GameEntity((0, 8, 0), main=True)
 
 ground = Entity(
-    model='plane',
+    model="plane",
+    # model=Terrain('ground', skip=8),
     collider='mesh',
     shader=shader,
     texture="ground",
@@ -110,32 +144,30 @@ ground = Entity(
 
 s = Sky(shader=shader)
 
-models = ['cube', 'sphere']
-cur_model = 0
-
 
 def input(key):
-    global cur_model
+    global models
     if key == input_handler.Keys.escape:
         application.quit()
 
-    if key == "o":
-        cur_model = (cur_model + 1) % len(models)
-        print(key, cur_model)
+    if key == input_handler.Keys.left_shift:
+        models.next()
 
     if key == input_handler.Keys.left_mouse_down:
         if mouse.world_point:
-            new_entity = GameEntity(position=hit_obj.position, rotation=hit_obj.rotation, model=hit_obj.model,
-                                    name="game_entity_" + str(len(entities)))
+            new_entity = GameEntity(position=models.get_model().position, rotation=models.get_model().rotation,
+                                    model=models.get_model_name(), texture=models.get_model().texture, name="game_entity_" + str(len(entities)))
             entities.add(new_entity)
 
 
 pivot = Entity()
-pivot.input = input
+
 AmbientLight()
 
-# PointLight(parent=pivot, y=0, x=10, z=-10, shadows=True)
-# PointLight(parent=pivot, y=0, x=-10, z=-10, shadows=True)
+# PointLight(parent=pivot, y=20, x=10, z=-10, shadows=True)
+# PointLight(parent=pivot, y=10, x=-10, z=-10, shadows=True)
+# PointLight(parent=pivot, y=10, x=0, z=0, shadows=True)
+# PointLight(parent=pivot, y=10, x=10, z=10, shadows=True)
 # DirectionalLight(parent=pivot, y=2, z=3, shadows=True)
 # SpotLight(parent=pivot, y=0, x=0, z=0, rotation_x=-90)
 
@@ -178,12 +210,12 @@ def get_direction(angles: tuple):
 
 
 def update():
-    global hit_obj, cur_model
-    rotation_y = hit_obj.hit_rotation[1]
+    global models
+    rotation_y = models.get_model().hit_rotation[1]
     rotation_y += held_keys[input_handler.Keys.right_arrow] * 1
     rotation_y -= held_keys[input_handler.Keys.left_arrow] * 1
 
-    hit_obj.hit_rotation = (hit_obj.hit_rotation[0], rotation_y, hit_obj.hit_rotation[2])
+    models.get_model().hit_rotation = (models.get_model().hit_rotation[0], rotation_y, models.get_model().hit_rotation[2])
 
     # game_entity_parent.x += held_keys[input_handler.Keys.right_arrow] * .1
     # game_entity_parent.x -= held_keys[input_handler.Keys.left_arrow] * .1
@@ -238,24 +270,15 @@ def update():
     # hit_info = raycast(origin, direction, ignore=(player, ), distance=10, debug=True)
 
     if mouse.world_point:
+        models.get_model().enable()
         if mouse.hovered_entity.name.startswith("game_entity"):
-            hit_obj.enable()
-            hit_obj.position = mouse.hovered_entity.world_position + mouse.world_normal.normalized()
-            hit_obj.world_rotation = mouse.hovered_entity.world_rotation
+            models.get_model().position = mouse.hovered_entity.world_position + mouse.world_normal.normalized()
+            models.get_model().world_rotation = mouse.hovered_entity.world_rotation
         else:
-            hit_obj.enable()
-            hit_obj.rotation = hit_obj.hit_rotation
-            hit_obj.position = mouse.world_point + mouse.world_normal.normalized() / 2
+            models.get_model().rotation = models.get_model().hit_rotation
+            models.get_model().position = mouse.world_point + mouse.world_normal.normalized() / 2
     else:
-        hit_obj.disable()
-
-    if hit_obj.model != models[cur_model]:
-        old_hit_obj = hit_obj
-        hit_obj = Entity(model=models[cur_model], position=old_hit_obj.position, scale=hit_obj.scale, texture='crate',
-                         shader=shader, color=color.rgba(0, 1, 0, 0.3), collider=None, rotation=hit_obj.rotation)
-        hit_obj.__setattr__("hit_rotation", old_hit_obj.hit_rotation or old_hit_obj.rotation)
-
-        destroy(old_hit_obj)
+        models.get_model().disable()
 
     if player.y < -50:
         player.position = (0, 4, 0)
@@ -265,7 +288,7 @@ def update():
     #
     # dir = str(("{:.2f}".format(direction[0]), "{:.2f}".format(direction[1]), "{:.2f}".format(direction[2])))
     info = "<green>Object " + \
-           str(cur_model) + \
+           str(mouse.hovered_entity) + \
            "<red>Grounded " + str(player.health)
     # print(Text.get_width(info))
     infohandler.text = info
