@@ -9,17 +9,16 @@ class App(ShowBase):
     def __init__(self):
         super(App, self).__init__()
 
-        # self.scene = self.loader.loadModel("ground.blend")
-        # self.scene.reparentTo(self.render)
-        # self.scene.setScale(10, 10, 10)
-        # self.scene.setPos(-8, 42, 0)
+        self.scene = self.loader.loadModel("ground.blend")
+        self.scene.reparentTo(self.render)
+        self.scene.setScale(10, 10, 10)
+        self.scene.setPos(-8, 42, 0)
 
-        # self.taskMgr.add(self.spinCameraTask, "SpinCameraTask")
+        self.taskMgr.add(self.spinCameraTask, "SpinCameraTask")
 
         self.actor = Actor("monkey.blend")
-        self.actor.setScale(5, 5, 5)
-        # self.actor.setPos(0, 0, 1)
-        self.actor.reparentTo(self.render)
+        # self.actor.setPos(0, 10, 0)
+        self.actor.reparentTo(self.scene)
 
     def spinCameraTask(self, task):
         angleDegrees = task.time * 6.0

@@ -162,7 +162,7 @@ def input(key):
 
 pivot = Entity()
 
-AmbientLight()
+# AmbientLight()
 
 # PointLight(parent=pivot, y=20, x=10, z=-10, shadows=True)
 # PointLight(parent=pivot, y=10, x=-10, z=-10, shadows=True)
@@ -279,6 +279,8 @@ def update():
             models.get_model().position = mouse.world_point + mouse.world_normal.normalized() / 2
     else:
         models.get_model().disable()
+
+    # print(models.get_model().intersects(debug=True).entities)
 
     if player.y < -50:
         player.position = (0, 4, 0)
