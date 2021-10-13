@@ -1,8 +1,10 @@
 from ursina import *
 from ursina.shaders import basic_lighting_shader as shdr
 
-from world_entity.blocks import Dirt
+from world_entity.blocks import *
 from world_entity.player import Player
+from worldgen.noise import Noise
+from worldgen.terrain_gen import generate_terrain, TerrainLevel
 
 
 class Application(Ursina):
@@ -16,22 +18,14 @@ class Application(Ursina):
         self.sky = Sky(shader=shdr)
         self.global_parent = Entity(parent=scene)
 
-        self.generate_land((10, 10))
+        self.terrain_levels = [TerrainLevel.Water.value, TerrainLevel.Sand.value, TerrainLevel.Ground.value,
+                               TerrainLevel.Hilly.value, TerrainLevel.Snowy.value]
+        self.generate_land((50, 50))
 
-        self.player = Player(position=(1, 10, 1), init_health=50)
+        self.player = Player(position=(1, 100, 1), init_health=50)
         self.player.update()
         camera.world_rotation = camera_world_rotation
 
     def generate_land(self, dimension: tuple):
-        for i in range(dimension[1]):
-            for j in range(dimension[0]):
-                Dirt(position=(i, 0, j), parent=self.global_parent, shader=shdr)
-
-    def input(self, key):
-        if key == input_handler.Keys.escape:
-            application.quit()
-
-    def update(self):
-        if self.player.y < -50:
-            self.player.position = (0, 4, 0)
-
+        noise_map = Noise.noise_map(size=dimension, seed=1, octaves=3, scale=10)
+        generate_terrain(noise_map, 10, self.terrain_levels, self.global_parent, shdr)

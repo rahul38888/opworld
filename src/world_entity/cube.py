@@ -1,9 +1,10 @@
-from ursina import Button, input_handler, destroy, mouse
+from ursina import *
 
 
 class Cube(Button):
     def __init__(self, parent, position, shader):
-        super().__init__(parent=parent, model='cube', position=position, shader=shader, collider="box")
+        super().__init__(parent=parent, model='cube', scale=(1, 1, 1),
+                         position=position, shader=shader, collider="box")
 
     def input(self, key):
         if self.hovered:
