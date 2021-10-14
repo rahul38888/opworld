@@ -27,5 +27,5 @@ class Application(Ursina):
         camera.world_rotation = camera_world_rotation
 
     def generate_land(self, dimension: tuple):
-        noise_map = Noise.noise_map(size=dimension, seed=1, octaves=3, scale=10)
+        noise_map = Noise.noise_map(size=dimension, seed=1, octaves=3, scale=((dimension[0]+dimension[1])//2))
         generate_terrain(noise_map, 10, self.terrain_levels, self.global_parent, shdr)

@@ -4,11 +4,13 @@ from world_entity.cube import Cube
 
 
 class Water(Cube):
-    def __init__(self,parent, position, shader):
+    load_texture("water", path="water.png")
+
+    def __init__(self, parent, position, shader):
         super(Water, self).__init__(parent, position, shader)
         self.name = "water"
         self.color = color.white
-        self.texture = "water"
+        self.texture = load_texture("water")
         self.hits = math.inf
 
     def another(self):
@@ -17,11 +19,13 @@ class Water(Cube):
 
 
 class Sand(Cube):
-    def __init__(self,parent, position, shader):
+    texture = load_texture("sand", path="sand.png")
+
+    def __init__(self, parent, position, shader):
         super(Sand, self).__init__(parent, position, shader)
         self.name = "sand"
         self.color = color.white
-        self.texture = "sand"
+        self.texture = load_texture("sand")
         self.hits = math.inf
 
     def another(self):
@@ -30,11 +34,13 @@ class Sand(Cube):
 
 
 class Dirt(Cube):
+    texture = load_texture("dirt", path="dirt.jpg")
+
     def __init__(self,parent, position, shader):
         super(Dirt, self).__init__(parent, position, shader)
         self.name = "dirt"
         self.color = color.white
-        self.texture = "dirt"
+        self.texture = load_texture("dirt")
         self.hits = 5
 
     def another(self):
@@ -43,11 +49,13 @@ class Dirt(Cube):
 
 
 class Stone(Cube):
-    def __init__(self,parent, position, shader):
+    texture = load_texture("stone", path="stone.jpg")
+
+    def __init__(self, parent, position, shader):
         super(Stone, self).__init__(parent, position, shader)
         self.name = "stone"
         self.color = color.white
-        self.texture = "stone"
+        self.texture = load_texture("stone")
         self.hits = 7
 
     def another(self):
