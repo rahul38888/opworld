@@ -14,7 +14,6 @@ class Application(Ursina):
         window.borderless = False
         window.fullscreen = True
 
-        self.light = AmbientLight()
         self.sky = Sky(shader=shdr)
         self.global_parent = Entity(parent=scene)
 
@@ -23,6 +22,7 @@ class Application(Ursina):
         self.generate_land((50, 50))
 
         self.player = Player(position=(1, 100, 1), init_health=50)
+        self.light = PointLight(position=(0, 5, 0), parent=self.player)
         self.player.update()
         camera.world_rotation = camera_world_rotation
 

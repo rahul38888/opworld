@@ -5,6 +5,9 @@ class Cube(Button):
     def __init__(self, parent, position, shader):
         super().__init__(parent=parent, model='cube', scale=(1, 1, 1),
                          position=position, shader=shader, collider="box")
+        self.disabled = True
+        # self.highlight_color = self.color
+        # self.pressed_color = self.color
 
     def input(self, key):
         if self.hovered:
