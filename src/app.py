@@ -4,7 +4,7 @@ from ursina.shaders import basic_lighting_shader as shdr
 from world_entity.blocks import *
 from world_entity.player import Player
 from worldgen.noise import Noise
-from worldgen.terrain_gen import generate_terrain, TerrainLevel
+from worldgen.minecraft_terrain import generate_terrain, TerrainLevel
 
 
 class Application(Ursina):
