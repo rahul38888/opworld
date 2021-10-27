@@ -3,7 +3,7 @@ from ursina.shaders import basic_lighting_shader as shdr
 
 from world_entity.blocks import *
 from world_entity.player import Player
-from worldgen.noise import Noise
+from worldgen.noise_gen import Noise
 from worldgen.minecraft_terrain import generate_terrain, TerrainLevel
 
 
@@ -27,5 +27,6 @@ class Application(Ursina):
         camera.world_rotation = camera_world_rotation
 
     def generate_land(self, dimension: tuple):
-        noise_map = Noise.noise_map(size=dimension, seed=1, octaves=3, scale=((dimension[0]+dimension[1])//2))
+        noise_map = Noise.perlin_noise(size=dimension, octaves=3, scale=((dimension[0]+dimension[1])//2),
+                                       persistence=0.5, lacunarity=2.0)
         generate_terrain(noise_map, 10, self.terrain_levels, self.global_parent, shdr)

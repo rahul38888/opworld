@@ -1,7 +1,7 @@
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
 
-from worldgen.noise import Noise
+from worldgen.noise_gen import Noise
 from enum import Enum
 
 
@@ -16,24 +16,17 @@ def get_mesh_data(heightmap: list, texture_scale: float, y_scale: float, terrain
     uv_increment = 1/ (texture_scale * (len(heightmap[0]) - 1))
     uv_x, uv_z = 0, 0
 
-    max_water = -math.inf
-    min_water = math.inf
-    for z in range(len(heightmap)):
-        for x in range(len(heightmap[0])):
-            if heightmap[z][x] <= TerrainLevel.Water.value.threshold:
-                max_water = max(max_water, heightmap[z][x])
-                min_water = min(min_water, heightmap[z][x])
-
-    wc: Color = TerrainLevel.Water.value.color
-    water_color = color.rgba(wc.r, wc.g, wc.b,0.5)
-    water = Entity(model="plane", color=water_color)
-
+    terrain_level_ybounds = {}
     for z in range(len(heightmap)):
         for x in range(len(heightmap[0])):
             terrain = None
             for t in terrain_levels:
                 if heightmap[z][x] <= t.threshold:
-                    terrain = t
+                    terrain: TerrainType = t
+                    if not terrain_level_ybounds.__contains__(terrain.name):
+                        terrain_level_ybounds[terrain.name] = [-math.inf, math.inf]
+                    terrain_level_ybounds[terrain.name] = [max(terrain_level_ybounds[terrain.name][0], heightmap[z][x]),
+                                                           min(terrain_level_ybounds[terrain.name][1], heightmap[z][x])]
                     break
 
             # noise_val = heightmap[z][x] + max_water*y_scale if terrain and terrain.level_region else heightmap[z][x]*y_scale
@@ -54,7 +47,7 @@ def get_mesh_data(heightmap: list, texture_scale: float, y_scale: float, terrain
             triangles.append(v_index(x, z))
             triangles.append(v_index(x + 1, z))
 
-    return vertices, triangles, uvs
+    return vertices, triangles, uvs, terrain_level_ybounds
 
 
 def get_colors(heightmap, terrain_levels):
@@ -74,21 +67,33 @@ def get_colors(heightmap, terrain_levels):
 
 def generate_terrain(heightmap: list, y_scale: int, terrain_levels: list, global_parent, shader, grid_pos: tuple,
                      texture_scale: float = 1.0):
-    vertices, triangles, uvs = get_mesh_data(heightmap, texture_scale, y_scale, terrain_levels)
+    vertices, triangles, uvs, terrain_level_ybounds = get_mesh_data(heightmap, texture_scale, y_scale, terrain_levels)
     colors = get_colors(heightmap, terrain_levels)
 
-    position = (grid_pos[0] + (len(heightmap[0])-1)//2, grid_pos[1], grid_pos[2] + (len(heightmap)-1)//2)
+    position = (grid_pos[0] - (len(heightmap[0])-1)//2, grid_pos[1], grid_pos[2] - (len(heightmap)-1)//2)
     model = Mesh(vertices=vertices, triangles=triangles, uvs=uvs, colors=colors)
     model.generate_normals(smooth=True)
-    mesh = Entity(model=model, collider="mesh", position=position)
+    mesh = Entity(model=model, collider="mesh", position=position, parent =global_parent)
+
+    if terrain_level_ybounds.__contains__(TerrainLevel.Water.value.name):
+        waterlevel = terrain_level_ybounds[TerrainLevel.Water.value.name][0]
+        wc: Color = TerrainLevel.Water.value.color
+        water_color = color.rgba(wc.r, wc.g, wc.b,0.5)
+        water = Entity(model="plane", color=water_color, shader=shader, parent =global_parent)
+        water.double_sided = True
+        water.scale = (len(heightmap[0]), 1, len(heightmap))
+        water.position = (0, waterlevel*y_scale, 0)
 
     return mesh
 
 
 def get_player_position(heightmap, x, z):
-    hit_info = raycast((x,100, z) , (0,-1,0), debug=True)
+    hit_info = raycast((x,100, z) , (0,-1,0), debug=False)
     print(hit_info.world_point)
-    return (x, hit_info.world_point[1]+3, z)
+    if hit_info and hit_info.hit:
+        return (x, hit_info.world_point[1]+3, z)
+
+    return (x,20,z)
 
 
 class TerrainType:
@@ -119,20 +124,17 @@ if __name__ == '__main__':
     app = Ursina()
 
     size = 100
-    d = 2
-    def height_val(i,j):
-        return math.exp(-(i*i+j*j)/(2*d*d))
 
-    y_scale = 20
+    y_scale = 25
     terrain_levels = [TerrainLevel.Water.value, TerrainLevel.Sand.value, TerrainLevel.Ground.value,
     TerrainLevel.Hilly.value, TerrainLevel.Snowy.value]
-    heightmap = Noise.noise_map((size,size), seed=1, octaves=3, scale=((size+size)//2))
+    heightmap = Noise.perlin_noise((size,size), octaves=6, scale=100, persistence=0.5, lacunarity=2.0)
     mesh = generate_terrain(heightmap=heightmap, y_scale=y_scale, terrain_levels=terrain_levels, global_parent=scene,
                             shader=shdr, texture_scale=1.0, grid_pos=(0,0, 0))
 
     player = FirstPersonController()
 
-    player.position = get_player_position(heightmap, 0,0)
+    player.position = get_player_position(heightmap, 1,1)
 
     # AmbientLight()
     PointLight(position=(20, 50, 20), parent=scene)

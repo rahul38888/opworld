@@ -1,3 +1,5 @@
 ursina
 perlin-noise
+noise
 matplotlib
+numpy
