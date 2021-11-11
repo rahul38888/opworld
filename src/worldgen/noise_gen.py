@@ -1,6 +1,5 @@
 import math
 
-from perlin_noise import PerlinNoise
 import noise
 
 
